@@ -215,8 +215,8 @@ void sensorInputVoltageCalibration() {
 
 void medicalConsultation() {
   lcd.clear();
-  updateLCDDisplay(0,0,"Iniciando consulta");
-  updateLCDDisplay(0,1,"medica...");
+  updateLCDDisplay(0,0,"Iniciando diagnosis");
+  updateLCDDisplay(0,1,"medico...");
   delay(interactionDisplayDuration);
 
   int copia = 0;
