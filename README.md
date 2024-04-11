@@ -81,16 +81,16 @@ To use this program effectively, follow these steps:
 ### 2 CSV Generation
 
 1. First, download the CoolTerm executable and unzip the file.
-![Download](https://github.com/hectorzayas/SEDENACovid/blob/master/READMECaptures/1.jpg)
+[Download](https://github.com/hectorzayas/SEDENACovid/blob/master/READMECaptures/1.jpg)
 2. When using CoolTerm, stick to the default settings.
 3. Make sure to close the Arduino IDE Capture Monitor to free up the communication port.
 4. Now, open the CoolTerm executable.
 5. Navigate to Settings and double-check that the Communication Port and Baudrate match the settings used in the Arduino IDE and your program.
-![Settings](https://github.com/hectorzayas/SEDENACovid/blob/master/READMECaptures/2.jpg)
+[Settings](https://github.com/hectorzayas/SEDENACovid/blob/master/READMECaptures/2.jpg)
 6. To establish a connection, go to Connection > Capture to Text/Binary File > Start...
-![File](https://github.com/hectorzayas/SEDENACovid/blob/master/READMECaptures/3.jpg)
+[File](https://github.com/hectorzayas/SEDENACovid/blob/master/READMECaptures/3.jpg)
 7. When saving the file, select "All Files" and give it a .csv extension.
 8. Hit Connect to start using the Arduino Program. The file will automatically save when new data is captured.
-![Connection](https://github.com/hectorzayas/SEDENACovid/blob/master/READMECaptures/4.jpg)
+[Connection](https://github.com/hectorzayas/SEDENACovid/blob/master/READMECaptures/4.jpg)
 9. When you're finished, stop the connection by going to Connection > Capture to Text/Binary File > Stop...
 10. Finally, disconnect from CoolTerm and exit the program.
