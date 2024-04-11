@@ -43,6 +43,8 @@ const int scanningDataSamples = 50;
 
 bool repeatAnalysis = true;
 
+int analysisCounter = 0;
+
 // Data Model
 const double cutoffPoint = 0.7049;                             // Select Cutoff Point
 const double cutoffPointThreshold = (2.0 / 3.0);               // Select Threshold Range
@@ -65,6 +67,9 @@ void setup() {
 
   // 3 - Calibrate PCB Amp OP variation
   sensorInputVoltageCalibration();
+
+  // Initiate CSV Generation
+  csvTitleGenerator();
 
   // 4 - Medical Diagnosis & Data Interpretation
   while (repeatAnalysis) {
@@ -168,17 +173,17 @@ void pressButtonToMessage(bool set, String message) {
 int YesNoSelector() {
   int answer = 0;
 
-  updateLCDDisplay(4, 3, "SI");
-  updateLCDDisplay(14, 3, "NO");
+  updateLCDDisplay(14, 3, "SI");
+  updateLCDDisplay(4, 3, "NO");
 
   while (pushbuttonState() < 1) {}
 
   if (pushbuttonState() == 1) {
-    updateLCDDisplay(4, 2, "__");
+    updateLCDDisplay(14, 2, "__");
     answer = 1;
     delay(shortDelay);
   } else if (pushbuttonState() == 2) {
-    updateLCDDisplay(14, 2, "__");
+    updateLCDDisplay(4, 2, "__");
     answer = 0;
     delay(shortDelay);
   }
@@ -187,9 +192,50 @@ int YesNoSelector() {
   return answer;
 }
 
-void capturedDataStatus(int data, int copy) {
-  updateLCDDisplay(0, 0, "Dato: " + String(data));
+String PositiveNegativeSelector() {
+  String answer;
+
+  updateLCDDisplay(11, 3, "POSITIVO");
+  updateLCDDisplay(1, 3, "NEGATIVO");
+
+  while (pushbuttonState() < 1) {}
+
+  if (pushbuttonState() == 1) {
+    updateLCDDisplay(11, 2, "________");
+    answer = "Positivo";
+    delay(shortDelay);
+  } else if (pushbuttonState() == 2) {
+    updateLCDDisplay(1, 2, "________");
+    answer = "Negativo";
+    delay(shortDelay);
+  }
+
+  delay(shortDelay);
+  return answer;
+}
+
+void capturedDataStatus(int data, int copy, double capture) {
+  updateLCDDisplay(0, 0, String(data));
+  updateLCDDisplay(7, 0, String(capture, 2));
   updateLCDDisplay(17, 0, String(copy) + "/" + String(copyCaptureLoop));
+}
+
+void csvTitleGenerator() {
+  Serial.println("");
+  Serial.print("Paciente, Diagnostico, ");
+  int myCapturesLength = (int)sizeof(myCaptures) / sizeof(myCaptures[0]);
+  for (int i = 0; i < myCapturesLength; i++) {
+    Serial.print(String(myCaptures[i], 4) + ", ");
+  }
+}
+
+void csvDataGenerator(int analysisCounter, String patientDiagnostic, double printCaptures[]) {
+  Serial.println("");
+  Serial.print(String(analysisCounter) + ", ");
+  Serial.print(patientDiagnostic + ", ");
+  for (int i = 0; i < dataCaptureLoop; i++) {
+    Serial.print(String(printCaptures[i], 4) + ", ");
+  }
 }
 
 void mainPresentation() {
@@ -239,34 +285,17 @@ void medicalDiagnosis() {
   updateLCDDisplay(0, 1, "medico...");
   delay(messageDisplayDuration);
 
+  analysisCounter = analysisCounter + 1;
+
   int copia = 0;
   int dato = 0;
   Average<double> resultados(copyCaptureLoop);
 
-  int hasTos = 0;
-  int hasCefalea = 0;
-  int hasRinorrea = 0;
-  /*
+  String patientDiagnostic;
   lcd.clear();
-  updateLCDDisplay(0, 0, "Tiene Tos?:");
-  hasTos = YesNoSelector();
-
-  lcd.clear();
-  updateLCDDisplay(0, 0, "Tiene Cefalea?:");
-  hasCefalea = YesNoSelector();
-
-  lcd.clear();
-  updateLCDDisplay(0, 0, "Tiene Rinorrea?:");
-  hasRinorrea = YesNoSelector();
-
-  lcd.clear();
-  updateLCDDisplay(0, 0, "Respuestas:");
-  updateLCDDisplay(0, 1, "- Tos:       " + String(hasTos));
-  updateLCDDisplay(0, 2, "- Cefalea:   " + String(hasCefalea));
-  updateLCDDisplay(0, 3, "- Rinorrea:  " + String(hasRinorrea));
-  delay(interactionDisplayDuration);
-*/
-
+  updateLCDDisplay(0, 0, "Ingrese diagnostico");
+  updateLCDDisplay(0, 1, "del paciente:");
+  patientDiagnostic = PositiveNegativeSelector();
 
   while (copia < copyCaptureLoop) {
     copia = copia + 1;
@@ -277,6 +306,7 @@ void medicalDiagnosis() {
     delay(messageDisplayDuration);
 
     Average<double> gatheredData(dataCaptureLoop);
+    double printCaptures[dataCaptureLoop];
     while (dato < dataCaptureLoop) {
       dato = dato + 1;
 
@@ -292,26 +322,31 @@ void medicalDiagnosis() {
       double crudeOutputVoltage = readSensorInputVoltage();
       double capturedOutputVoltage = crudeOutputVoltage - noiseVoltage;
 
-      capturedDataStatus(dato, copia);
+      capturedDataStatus(dato, copia, myCaptures[dato - 1]);
       pressButtonToMessage(1, "para capturar.");
       while (pushbuttonState() != 1) {
         crudeOutputVoltage = readSensorInputVoltage();
         capturedOutputVoltage = crudeOutputVoltage - noiseVoltage;
-        updateLCDDisplay(0, 1, "Filtro: " + String(capturedOutputVoltage, 6));
-        updateLCDDisplay(0, 2, "Crudo:  " + String(crudeOutputVoltage, 6));
+        updateLCDDisplay(0, 1, "Filtro: " + String(capturedOutputVoltage, 4));
+        updateLCDDisplay(15, 1, "V");
+        updateLCDDisplay(0, 2, "Crudo:  " + String(crudeOutputVoltage, 4));
+        updateLCDDisplay(15, 2, "V");
         delay(minimumDelay);
       }
 
       lcd.clear();
-      updateLCDDisplay(0, 0, "Capturando...");
+      capturedDataStatus(dato, copia, myCaptures[dato - 1]);
+      updateLCDDisplay(0, 3, "Capturando...");
 
       Average<double> scanningVoltageData(scanningDataSamples);
 
       for (int i = 0; i < scanningDataSamples; i++) {
         crudeOutputVoltage = readSensorInputVoltage();
         capturedOutputVoltage = crudeOutputVoltage - noiseVoltage;
-        updateLCDDisplay(0, 1, "Filtro: " + String(capturedOutputVoltage, 6));
-        updateLCDDisplay(0, 2, "Crudo:  " + String(crudeOutputVoltage, 6));
+        updateLCDDisplay(0, 1, "Filtro: " + String(capturedOutputVoltage, 4));
+        updateLCDDisplay(15, 1, "V");
+        updateLCDDisplay(0, 2, "Crudo:  " + String(crudeOutputVoltage, 4));
+        updateLCDDisplay(15, 2, "V");
         scanningVoltageData.push(capturedOutputVoltage);
         delay(minimumDelay);
       }
@@ -319,6 +354,7 @@ void medicalDiagnosis() {
       capturedOutputVoltage = scanningVoltageData.maximum();
 
       gatheredData.push(capturedOutputVoltage);
+      printCaptures[dato - 1] = capturedOutputVoltage;
       delay(shortDelay);
     }
 
@@ -335,50 +371,14 @@ void medicalDiagnosis() {
         updateLCDDisplay(c * 11, r + 1, String(r + 1 + (c * 3)) + ": " + String(gatheredData.get(r + (c * 3)), 4));
       }
     }
+
+    csvDataGenerator(analysisCounter, patientDiagnostic, printCaptures);
+
     delay(shortDelay);
     while (pushbuttonState() != 1) {}
 
-    // Data Interpretation
-
-    double normMin = (gatheredData.get(0) - gatheredData.mean()) / gatheredData.stddev();
-    double normMax = (gatheredData.get(dataCaptureLoop - 1) - gatheredData.mean()) / gatheredData.stddev();
-    double slope = (normMax - normMin) / (IRSensorMax - IRSensorMin);
-
-    lcd.clear();
-    updateLCDDisplay(0, 0, "Dato 1 = " + String(gatheredData.get(0), 4) + " " + voltageUnits);
-    // updateLCDDisplay(0, 1, "Dato " + String(dataCaptureLoop) + " = " + String(gatheredData.get(dataCaptureLoop - 1), 4) + voltageUnits);
-    updateLCDDisplay(0, 1, "CutOff = " + String(cutoffPoint, 4) + " " + voltageUnits);
-
-    updateLCDDisplay(0, 3, "Resultado " + String(copia) + ": ");
-    if (gatheredData.get(0) < cutoffPoint) {
-      updateLCDDisplay(12, 3, "POSITIVO");
-      resultados.push(1);
-    } else {
-      updateLCDDisplay(12, 3, "NEGATIVO");
-      resultados.push(0);
-    }
-
-    delay(shortDelay);
-    while (pushbuttonState() != 1) {};
-
     lcd.clear();
   }
-
-  lcd.clear();
-  String finalResult;
-
-  if (resultados.mean() >= cutoffPointThreshold) {
-    finalResult = "POSITIVO";
-  } else {
-    finalResult = "NEGATIVO";
-  }
-  updateLCDDisplay(0, 0, "Promedio resultados:");
-  updateLCDDisplay(0, 1, String(resultados.mean()));
-  updateLCDDisplay(0, 2, "Resultado final:");
-  updateLCDDisplay(0, 3, finalResult);
-
-  delay(shortDelay);
-  while (pushbuttonState() != 1) {};
 
   lcd.clear();
   updateLCDDisplay(0, 0, "Repetir analisis?");
