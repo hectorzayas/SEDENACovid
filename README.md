@@ -2,6 +2,8 @@
 
 This repository contains the code for a project that utilizes an Arduino Uno platform to detect the presence of SARS-CoV-2 (COVID-19) in saliva samples using a Quantum Cascade Laser (QCL) coupled with an IR Sensor. This is a part of a larger project that employs Fourier-transform infrared spectroscopy (FTIR) to discriminate between negative and positive COVID-19 patients.
 
+This Arduino UNO programming project was developed for research conducted at the Military Medical School, which is part of the National Defense Secretariat (SEDENA) in Mexico.
+
 ## Overview
 
 The Arduino reads the voltage produced by the QCL as it traverses a saliva sample. The voltage readings are processed to determine the presence or absence of COVID-19 based on pre-defined cutoff points and controller values.
@@ -24,7 +26,56 @@ The Arduino reads the voltage produced by the QCL as it traverses a saliva sampl
 
 ## Setup and Configuration
 
-1. Connect the Arduino Uno to the QCL and IR Sensor.
-2. Install the Liquid Crystal I2C and Average libraries in your Arduino IDE.
-3. Upload the provided code to the Arduino Uno.
-4. Use CoolTerm to monitor the serial output for diagnostic messages and data capture.
+### 1 Arduino Setup
+
+To use this program effectively, follow these steps:
+
+1. **Connections and Components:**
+   - Ensure you have the required components connected properly, including the LCD display, buttons, LED, and any sensors.
+   - Connect the Arduino Uno to the QCL and IR Sensor.
+
+2. **Upload the Code:**
+   - Copy the provided code into your Arduino IDE or any compatible platform.
+   - Upload the code to your Arduino board.
+
+3. **Setup:**
+   - Once the code is uploaded, the setup function will initialize the program.
+   - Ensure that the LCD display and buttons are initialized correctly.
+
+4. **Presentation Message:**
+   - Upon starting, the program will display a presentation message on the LCD screen. This is just a visual indication that the program has started correctly.
+
+5. **Calibration:**
+   - Follow the instructions on the LCD screen to calibrate the sensor input voltage.
+   - The calibration process involves turning off the sensor, calibrating noise, and then turning on the sensor again.
+   - Follow the on-screen instructions and press the buttons as required to proceed through the calibration process.
+
+6. **Data Interpretation:**
+   - After calibration, the program will enter the main loop for medical diagnosis and data interpretation.
+   - Enter the diagnosis of the patient using the buttons on the board.
+   - The program will then perform a series of analyses based on user input and sensor readings.
+   - Follow the on-screen instructions to capture data and proceed with the analysis.
+
+    Important Instructions for Voltage Output Analysis:
+
+    1) Activate the Laser Diode / Temperature Controller:
+        * Turn on the laser diode or temperature controller and wait for the diode to activate.
+        * You will hear a relay click, indicating the activation of the diode.
+        * Additionally, observe the LD ON switch LED; it will change from blinking to remaining continuously on, signaling the activation of the diode.
+    
+    2) Initiate Scanning Capture on the Arduino:
+        * Once the diode is activated, promptly begin the scanning capture on the Arduino.
+        * The program will continuously analyze all voltage outputs registered during the data capture process.
+
+7. **Data Output:**
+   - The program will output data to the LCD display as well as the serial monitor.
+   - If needed, you can capture the data from the serial monitor for further analysis or processing.
+
+8. **Repeat Analysis:**
+   - After each analysis, the program will ask if you want to repeat the analysis.
+   - Use the buttons to select 'SI' (Yes) or 'NO' (No) accordingly.
+
+9. **Reset:**
+   - If you need to reset the program at any point, press the reset button on your Arduino board.
+
+### 4 CSV Generation
