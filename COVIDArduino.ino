@@ -24,6 +24,7 @@ const int resetTime = 3000;
 const int messageDisplayDuration = 1000;
 const int interactionDisplayDuration = 3000;
 const int shortDelay = 250;
+const int minimumDelay = 50;
 
 // Value units:
 String voltageUnits = "V";
@@ -38,15 +39,16 @@ double noiseVoltage = 0;
 // Data Capture
 const int dataCaptureLoop = 5;  // Production value: 5
 const int copyCaptureLoop = 3;  // Production value: 3
+const int scanningDataSamples = 50;
 
 bool repeatAnalysis = true;
 
 // Data Model
-const double cutoffPoint = 0.7049;                              // Select Cutoff Point
-const double cutoffPointThreshold = (2.0 / 3.0);                // Select Threshold Range
-const double myCaptures[] = { 0.28, 0.33, 0.38, 0.43, 0.48 };   // Select (A) COntroller values
-const double IRSensorMin = myCaptures[0];                       // Select Min SensorIR(A) lecture
-const double IRSensorMax = myCaptures[4];                       // Select Max SensorIR(A) lecture
+const double cutoffPoint = 0.7049;                             // Select Cutoff Point
+const double cutoffPointThreshold = (2.0 / 3.0);               // Select Threshold Range
+const double myCaptures[] = { 0.28, 0.33, 0.38, 0.43, 0.48 };  // Select (A) COntroller values
+const double IRSensorMin = myCaptures[0];                      // Select Min SensorIR(A) lecture
+const double IRSensorMax = myCaptures[4];                      // Select Max SensorIR(A) lecture
 
 void (*resetFunc)(void) = 0;
 
@@ -194,11 +196,11 @@ void mainPresentation() {
   lcd.clear();
   updateLCDDisplay(2, 1, "SECRETARIA DE LA");
   updateLCDDisplay(2, 2, "DEFENSA NACIONAL");
-  delay(messageDisplayDuration);
+  delay(interactionDisplayDuration);
   lcd.clear();
   updateLCDDisplay(2, 1, "ESCUELA MILITAR");
   updateLCDDisplay(4, 2, "DE MEDICINA");
-  delay(messageDisplayDuration);
+  delay(interactionDisplayDuration);
   lcd.clear();
 }
 
@@ -206,7 +208,7 @@ void sensorInputVoltageCalibration() {
   lcd.clear();
   updateLCDDisplay(0, 0, "Iniciando ajuste");
   updateLCDDisplay(0, 1, "del Componente...");
-  delay(interactionDisplayDuration);
+  delay(messageDisplayDuration);
 
   lcd.clear();
   updateLCDDisplay(0, 0, "Apague el Sensor.");
@@ -235,7 +237,7 @@ void medicalDiagnosis() {
   lcd.clear();
   updateLCDDisplay(0, 0, "Iniciando analisis");
   updateLCDDisplay(0, 1, "medico...");
-  delay(interactionDisplayDuration);
+  delay(messageDisplayDuration);
 
   int copia = 0;
   int dato = 0;
@@ -272,7 +274,7 @@ void medicalDiagnosis() {
 
     lcd.clear();
     updateLCDDisplay(5, 1, "Analisis " + String(copia));
-    delay(interactionDisplayDuration);
+    delay(messageDisplayDuration);
 
     Average<double> gatheredData(dataCaptureLoop);
     while (dato < dataCaptureLoop) {
@@ -297,8 +299,25 @@ void medicalDiagnosis() {
         capturedOutputVoltage = crudeOutputVoltage - noiseVoltage;
         updateLCDDisplay(0, 1, "Filtro: " + String(capturedOutputVoltage, 6));
         updateLCDDisplay(0, 2, "Crudo:  " + String(crudeOutputVoltage, 6));
-        delay(shortDelay);
+        delay(minimumDelay);
       }
+
+      lcd.clear();
+      updateLCDDisplay(0, 0, "Capturando...");
+
+      Average<double> scanningVoltageData(scanningDataSamples);
+
+      for (int i = 0; i < scanningDataSamples; i++) {
+        crudeOutputVoltage = readSensorInputVoltage();
+        capturedOutputVoltage = crudeOutputVoltage - noiseVoltage;
+        updateLCDDisplay(0, 1, "Filtro: " + String(capturedOutputVoltage, 6));
+        updateLCDDisplay(0, 2, "Crudo:  " + String(crudeOutputVoltage, 6));
+        scanningVoltageData.push(capturedOutputVoltage);
+        delay(minimumDelay);
+      }
+
+      capturedOutputVoltage = scanningVoltageData.maximum();
+
       gatheredData.push(capturedOutputVoltage);
       delay(shortDelay);
     }
