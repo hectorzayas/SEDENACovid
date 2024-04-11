@@ -22,7 +22,7 @@ The Arduino reads the voltage produced by the QCL as it traverses a saliva sampl
 
 ## Tools Used
 
-- [CoolTerm](https://freeware.the-meiers.org/): A serial port terminal application used for debugging and communication with the Arduino. Setup tutorial available [here](https://www.youtube.com/watch?v=RWgyCcnUxPY&ab_channel=ShuvangkarDas).
+- [CoolTerm](https://freeware.the-meiers.org/): A serial port terminal application used for debugging and communication with the Arduino.
 
 ## Setup and Configuration
 
@@ -78,4 +78,15 @@ To use this program effectively, follow these steps:
 9. **Reset:**
    - If you need to reset the program at any point, press the reset button on your Arduino board.
 
-### 4 CSV Generation
+### 2 CSV Generation
+
+1. First, download the CoolTerm executable and unzip the file.
+2. When using CoolTerm, stick to the default settings.
+3. Make sure to close the Arduino IDE Capture Monitor to free up the communication port.
+4. Now, open the CoolTerm executable.
+5. Navigate to Settings and double-check that the Communication Port and Baudrate match the settings used in the Arduino IDE and your program.
+6. To establish a connection, go to Connection > Capture to Text/Binary File > Start...
+7. When saving the file, select "All Files" and give it a .csv extension.
+8. Hit Connect to start using the Arduino Program. The file will automatically save when new data is captured.
+9. When you're finished, stop the connection by going to Connection > Capture to Text/Binary File > Stop...
+10. Finally, disconnect from CoolTerm and exit the program.
