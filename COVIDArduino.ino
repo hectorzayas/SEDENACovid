@@ -75,7 +75,7 @@ void setup() {
 
 void loop() {
   pushbuttonState();
-  
+
   // printVoltageOutputAtA3();
 }
 
@@ -221,7 +221,7 @@ void sensorInputVoltageCalibration() {
 
   lcd.clear();
   updateLCDDisplay(0, 0, "Ruido calibrado.");
-  updateLCDDisplay(0, 1, "Ruido = " + String(noiseVoltage) + " " + voltageUnits);
+  updateLCDDisplay(0, 1, "Ruido = " + String(noiseVoltage, 4) + " " + voltageUnits);
 
   delay(interactionDisplayDuration);
 
@@ -287,13 +287,17 @@ void medicalDiagnosis() {
       lcd.clear();
       delay(shortDelay);
 
-      double capturedOutputVoltage = readSensorInputVoltage() - noiseVoltage;
+      double crudeOutputVoltage = readSensorInputVoltage();
+      double capturedOutputVoltage = crudeOutputVoltage - noiseVoltage;
 
       capturedDataStatus(dato, copia);
       pressButtonToMessage(1, "para capturar.");
       while (pushbuttonState() != 1) {
-        capturedOutputVoltage = readSensorInputVoltage() - noiseVoltage;
-        updateLCDDisplay(0, 1, "Medicion: " + String(capturedOutputVoltage, 4) + " " + voltageUnits);
+        crudeOutputVoltage = readSensorInputVoltage();
+        capturedOutputVoltage = crudeOutputVoltage - noiseVoltage;
+        updateLCDDisplay(0, 1, "Filtro: " + String(capturedOutputVoltage, 6));
+        updateLCDDisplay(0, 2, "Crudo:  " + String(crudeOutputVoltage, 6));
+        delay(shortDelay);
       }
       gatheredData.push(capturedOutputVoltage);
       delay(shortDelay);
