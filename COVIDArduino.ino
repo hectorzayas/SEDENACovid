@@ -46,8 +46,10 @@ bool repeatAnalysis = true;
 int analysisCounter = 0;
 
 // Data Model
-const double cutoffPoint = 0.7049;                             // Select Cutoff Point
-const double myCaptures[] = { 0.28, 0.33, 0.38, 0.43, 0.48 };  // Select (A) COntroller values
+const double capturesSensor1[5] = { 0.30, 0.33, 0.36, 0.39, 0.42 };
+const double capturesSensor2[5] = { 0.28, 0.33, 0.38, 0.43, 0.48 };
+double myCaptures[5];
+const int sensor = 2;  // Select Working Sensor
 
 void (*resetFunc)(void) = 0;
 
@@ -126,6 +128,27 @@ void mainPresentation() {
 */
 
 void sensorInputVoltageCalibration() {
+  switch (sensor) {
+    case 1:
+      for (int i = 0; i < (sizeof(capturesSensor1) / sizeof(capturesSensor1[0])); i++) {
+        myCaptures[i] = capturesSensor1[i];
+      }
+      break;
+    case 2:
+      for (int i = 0; i < (sizeof(capturesSensor2) / sizeof(capturesSensor2[0])); i++) {
+        myCaptures[i] = capturesSensor2[i];
+      }
+      break;
+  }
+
+  lcd.clear();
+  updateLCDDisplay(6, 1, "Sensor " + String(sensor));
+  for (int i = 0; i < (sizeof(myCaptures) / sizeof(myCaptures[0])); i++) {
+    updateLCDDisplay(i * 4 + 1, 2, String(int(myCaptures[i] * 100)));
+  }
+
+  delay(interactionDisplayDuration);
+
   lcd.clear();
   updateLCDDisplay(0, 0, "Iniciando ajuste");
   updateLCDDisplay(0, 1, "del Componente...");
