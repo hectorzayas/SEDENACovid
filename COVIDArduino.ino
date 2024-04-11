@@ -47,10 +47,7 @@ int analysisCounter = 0;
 
 // Data Model
 const double cutoffPoint = 0.7049;                             // Select Cutoff Point
-const double cutoffPointThreshold = (2.0 / 3.0);               // Select Threshold Range
 const double myCaptures[] = { 0.28, 0.33, 0.38, 0.43, 0.48 };  // Select (A) COntroller values
-const double IRSensorMin = myCaptures[0];                      // Select Min SensorIR(A) lecture
-const double IRSensorMax = myCaptures[4];                      // Select Max SensorIR(A) lecture
 
 void (*resetFunc)(void) = 0;
 
@@ -82,11 +79,13 @@ void setup() {
 
 void loop() {
   pushbuttonState();
-
-  // printVoltageOutputAtA3();
 }
 
-// -------------------- //
+/*
+*************************************************
+1 - Initialize LCD and Buttons
+*************************************************
+*/
 
 void lcdDisplayInit() {
   lcd.init();
@@ -102,141 +101,11 @@ void buttonAndLedInit() {
   pinMode(ledPin, OUTPUT);  // led
 }
 
-int pushbuttonState() {
-  int pressedButton = -1;
-
-  buttonState1 = digitalRead(buttonPin1);
-  buttonState2 = digitalRead(buttonPin2);
-  buttonState3 = digitalRead(buttonPin3);
-
-  if (buttonState1 == 1) {
-    pressedButton = 1;  // SI
-  } else if (buttonState2 == 1) {
-    pressedButton = 2;  // NO
-  } else if (buttonState3 == 1) {
-    pressedButton = 0;  // RESET
-    resetFunc();
-  }
-
-  if (pressedButton > -1) {
-    digitalWrite(ledPin, 1);
-  } else {
-    digitalWrite(ledPin, 0);
-  }
-
-  return pressedButton;
-}
-
-void updateLCDDisplay(int cell, int row, String displayString) {
-  lcd.setCursor(cell, row);
-  lcd.print(displayString);
-}
-
-double readSensorInputVoltage() {
-  const double inputVoltage = analogRead(A3) * (outputReferenceMaxVoltage / analogArduinoInput);
-  return inputVoltage;
-}
-
-double printVoltageOutputAtA3() {
-  lcd.clear();
-  while (pushbuttonState() < 1) {
-    updateLCDDisplay(2, 1, "V = " + String(readSensorInputVoltage()));
-    delay(shortDelay);
-  }
-}
-
-double getOutputAverageVoltage(int avSize, int avDelay) {
-  Average<double> averageValue(avSize);
-  int i = avSize;
-  while (i > 0) {
-    averageValue.push(readSensorInputVoltage());
-    delay(avDelay);
-    i = i - 1;
-  }
-
-  return averageValue.mean();
-}
-
-// -------------------- //
-
-void pressButtonToMessage(bool set, String message) {
-  String setValue = "";
-  if (set) {
-    setValue = "SI";
-  } else {
-    setValue = "NO";
-  }
-
-  updateLCDDisplay(0, 3, setValue + " " + String(message));
-}
-
-int YesNoSelector() {
-  int answer = 0;
-
-  updateLCDDisplay(14, 3, "SI");
-  updateLCDDisplay(4, 3, "NO");
-
-  while (pushbuttonState() < 1) {}
-
-  if (pushbuttonState() == 1) {
-    updateLCDDisplay(14, 2, "__");
-    answer = 1;
-    delay(shortDelay);
-  } else if (pushbuttonState() == 2) {
-    updateLCDDisplay(4, 2, "__");
-    answer = 0;
-    delay(shortDelay);
-  }
-
-  delay(shortDelay);
-  return answer;
-}
-
-String PositiveNegativeSelector() {
-  String answer;
-
-  updateLCDDisplay(11, 3, "POSITIVO");
-  updateLCDDisplay(1, 3, "NEGATIVO");
-
-  while (pushbuttonState() < 1) {}
-
-  if (pushbuttonState() == 1) {
-    updateLCDDisplay(11, 2, "________");
-    answer = "Positivo";
-    delay(shortDelay);
-  } else if (pushbuttonState() == 2) {
-    updateLCDDisplay(1, 2, "________");
-    answer = "Negativo";
-    delay(shortDelay);
-  }
-
-  delay(shortDelay);
-  return answer;
-}
-
-void capturedDataStatus(int data, int copy, double capture) {
-  updateLCDDisplay(0, 0, String(data));
-  updateLCDDisplay(7, 0, String(capture, 2));
-  updateLCDDisplay(17, 0, String(copy) + "/" + String(copyCaptureLoop));
-}
-
-void csvTitleGenerator() {
-  Serial.println("");
-  Serial.print("Paciente, Diagnostico, ");
-  int myCapturesLength = (int)sizeof(myCaptures) / sizeof(myCaptures[0]);
-  for (int i = 0; i < myCapturesLength; i++) {
-    Serial.print(String(myCaptures[i], 4) + ", ");
-  }
-}
-
-void csvDataGenerator(int analysisCounter, String patientDiagnostic, double printCaptures[]) {
-  Serial.println("");
-  Serial.print(String(analysisCounter) + ", ");
-  Serial.print(patientDiagnostic + ", ");
-  for (int i = 0; i < dataCaptureLoop; i++) {
-    Serial.print(String(printCaptures[i], 4) + ", ");
-  }
-}
+/*
+*************************************************
+2 - Show Presentation Message
+*************************************************
+*/
 
 void mainPresentation() {
   lcd.clear();
@@ -249,6 +118,12 @@ void mainPresentation() {
   delay(interactionDisplayDuration);
   lcd.clear();
 }
+
+/*
+*************************************************
+3 - Calibrate PCB Amp OP variation
+*************************************************
+*/
 
 void sensorInputVoltageCalibration() {
   lcd.clear();
@@ -278,6 +153,12 @@ void sensorInputVoltageCalibration() {
   pressButtonToMessage(1, "para continuar.");
   while (pushbuttonState() != 1) {}
 }
+
+/*
+*************************************************
+4 - Medical Diagnosis & Data Interpretation
+*************************************************
+*/
 
 void medicalDiagnosis() {
   lcd.clear();
@@ -372,7 +253,7 @@ void medicalDiagnosis() {
       }
     }
 
-    csvDataGenerator(analysisCounter, patientDiagnostic, printCaptures);
+    csvDataGenerator(analysisCounter, patientDiagnostic, copia, printCaptures);
 
     delay(shortDelay);
     while (pushbuttonState() != 1) {}
@@ -384,4 +265,153 @@ void medicalDiagnosis() {
   updateLCDDisplay(0, 0, "Repetir analisis?");
   delay(shortDelay);
   repeatAnalysis = YesNoSelector();
+}
+
+/*
+*************************************************
+TOOLS AND FUNCTIONS
+*************************************************
+*/
+
+// BUTTONS AND SELECTORS
+
+int pushbuttonState() {
+  int pressedButton = -1;
+
+  buttonState1 = digitalRead(buttonPin1);
+  buttonState2 = digitalRead(buttonPin2);
+  buttonState3 = digitalRead(buttonPin3);
+
+  if (buttonState1 == 1) {
+    pressedButton = 1;  // SI
+  } else if (buttonState2 == 1) {
+    pressedButton = 2;  // NO
+  } else if (buttonState3 == 1) {
+    pressedButton = 0;  // RESET
+    resetFunc();
+  }
+
+  if (pressedButton > -1) {
+    digitalWrite(ledPin, 1);
+  } else {
+    digitalWrite(ledPin, 0);
+  }
+
+  return pressedButton;
+}
+
+void pressButtonToMessage(bool set, String message) {
+  String setValue = "";
+  if (set) {
+    setValue = "SI";
+  } else {
+    setValue = "NO";
+  }
+
+  updateLCDDisplay(0, 3, setValue + " " + String(message));
+}
+
+int YesNoSelector() {
+  int answer = 0;
+
+  updateLCDDisplay(14, 3, "SI");
+  updateLCDDisplay(4, 3, "NO");
+
+  while (pushbuttonState() < 1) {}
+
+  if (pushbuttonState() == 1) {
+    updateLCDDisplay(14, 2, "__");
+    answer = 1;
+    delay(shortDelay);
+  } else if (pushbuttonState() == 2) {
+    updateLCDDisplay(4, 2, "__");
+    answer = 0;
+    delay(shortDelay);
+  }
+
+  delay(shortDelay);
+  return answer;
+}
+
+String PositiveNegativeSelector() {
+  String answer;
+
+  updateLCDDisplay(11, 3, "POSITIVO");
+  updateLCDDisplay(1, 3, "NEGATIVO");
+
+  while (pushbuttonState() < 1) {}
+
+  if (pushbuttonState() == 1) {
+    updateLCDDisplay(11, 2, "________");
+    answer = "Positivo";
+    delay(shortDelay);
+  } else if (pushbuttonState() == 2) {
+    updateLCDDisplay(1, 2, "________");
+    answer = "Negativo";
+    delay(shortDelay);
+  }
+
+  delay(shortDelay);
+  return answer;
+}
+
+// VOLTAGES
+
+double readSensorInputVoltage() {
+  const double inputVoltage = analogRead(A3) * (outputReferenceMaxVoltage / analogArduinoInput);
+  return inputVoltage;
+}
+
+double printVoltageOutputAtA3() {
+  lcd.clear();
+  while (pushbuttonState() < 1) {
+    updateLCDDisplay(2, 1, "V = " + String(readSensorInputVoltage()));
+    delay(shortDelay);
+  }
+}
+
+double getOutputAverageVoltage(int avSize, int avDelay) {
+  Average<double> averageValue(avSize);
+  int i = avSize;
+  while (i > 0) {
+    averageValue.push(readSensorInputVoltage());
+    delay(avDelay);
+    i = i - 1;
+  }
+
+  return averageValue.mean();
+}
+
+// DISPLAY
+
+void updateLCDDisplay(int cell, int row, String displayString) {
+  lcd.setCursor(cell, row);
+  lcd.print(displayString);
+}
+
+void capturedDataStatus(int data, int copy, double capture) {
+  updateLCDDisplay(0, 0, String(data));
+  updateLCDDisplay(7, 0, String(capture, 2));
+  updateLCDDisplay(17, 0, String(copy) + "/" + String(copyCaptureLoop));
+}
+
+// CSV GENERATION
+
+void csvTitleGenerator() {
+  Serial.println("");
+  Serial.print("Paciente, Diagnostico, Analisis, ");
+  int myCapturesLength = (int)sizeof(myCaptures) / sizeof(myCaptures[0]);
+  for (int i = 0; i < myCapturesLength; i++) {
+    Serial.print(String(myCaptures[i], 4) + ", ");
+  }
+}
+
+void csvDataGenerator(int analysisCounter, String patientDiagnostic, int copia, double printCaptures[]) {
+  Serial.println("");
+  Serial.print(String(analysisCounter) + ", ");
+  Serial.print(patientDiagnostic + ", ");
+  Serial.print(String(copia) + ", ");
+  for (int i = 0; i < dataCaptureLoop; i++) {
+    Serial.print(String(printCaptures[i], 4) + ", ");
+  }
 }
