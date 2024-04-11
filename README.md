@@ -79,5 +79,3 @@ To use this program effectively, follow these steps:
    - If you need to reset the program at any point, press the reset button on your Arduino board.
 
 ### 4 CSV Generation
-
-1. Cool Term
