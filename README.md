@@ -102,3 +102,23 @@ To use this program effectively, follow these steps:
 
 9. When you're finished, stop the connection by going to Connection > Capture to Text/Binary File > Stop...
 10. Finally, disconnect from CoolTerm and exit the program.
+
+## Theory and Application
+
+### Transmittance and Absorbance
+
+#### [Beer-Lambert Law and Visible Light Spectrometers](https://dept.harpercollege.edu/chemistry/chm/100/dgodambe/thedisk/labtech/spec20.htm)
+
+When a beam of radiation (light) passes through a substance or a solution, some of the light may be absorbed and the remainder transmitted through the sample. The ratio of the intensity of the light entering the sample (Io) to that exiting the sample (It) at a particular wavelength is defined as the transmittance (T). This is often expressed as the percent transmittance (%T), which is simply the transmittance multiplied by 100. The absorbance (A) of a sample is the negative logarithm of the transmittance.
+
+% T = (Io / It ) x 100
+
+A = - log (T)
+
+The absorbance of a sample at a given wavelength is proportional to the absorptivity of the substance (a constant at each wavelength), the path length (the distance the light travels through the sample) and, in many instances, the concentration of the absorbing substance. In these cases the Beer-Lambert Law holds:
+
+A = a * b * c
+where
+a = the absorptivity of the substance
+b = path length
+c = concentration of the substance

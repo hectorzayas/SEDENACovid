@@ -49,7 +49,7 @@ int analysisCounter = 0;
 const double capturesSensor1[5] = { 0.30, 0.33, 0.36, 0.39, 0.42 };
 const double capturesSensor2[5] = { 0.28, 0.33, 0.38, 0.43, 0.48 };
 double myCaptures[5];
-const int sensor = 2;  // Select Working Sensor
+const int sensor = 1;  // Select Working Sensor
 
 void (*resetFunc)(void) = 0;
 
