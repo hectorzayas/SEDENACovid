@@ -28,6 +28,7 @@ const int minimumDelay = 50;
 
 // Value units:
 String voltageUnits = "V";
+const double INF = 9999.0;
 
 // Calibration
 const int calibrationSamples = 10;
@@ -42,14 +43,17 @@ const int copyCaptureLoop = 3;  // Production value: 3
 const int scanningDataSamples = 50;
 
 bool repeatAnalysis = true;
-
 int analysisCounter = 0;
 
 // Data Model
-const double capturesSensor1[5] = { 0.30, 0.33, 0.36, 0.39, 0.42 };
-const double capturesSensor2[5] = { 0.28, 0.33, 0.38, 0.43, 0.48 };
-double myCaptures[5];
+const double capturesSensor1[dataCaptureLoop] = { 0.30, 0.33, 0.36, 0.39, 0.42 };
+const double capturesSensor2[dataCaptureLoop] = { 0.28, 0.33, 0.38, 0.43, 0.48 };
+double myCaptures[dataCaptureLoop];
 const int sensor = 1;  // Select Working Sensor
+
+// Absorbance and Transmittance
+const double baseTransmittance = 0;
+double baseTransmittanceCaptures[dataCaptureLoop];
 
 void (*resetFunc)(void) = 0;
 
@@ -66,6 +70,7 @@ void setup() {
 
   // 3 - Calibrate PCB Amp OP variation
   sensorInputVoltageCalibration();
+  transmittanceBaseCalibration();
 
   // Initiate CSV Generation
   csvTitleGenerator();
@@ -167,7 +172,7 @@ void sensorInputVoltageCalibration() {
 
   lcd.clear();
   updateLCDDisplay(0, 0, "Ruido calibrado.");
-  updateLCDDisplay(0, 1, "Ruido = " + String(noiseVoltage, 4) + " " + voltageUnits);
+  updateLCDDisplay(0, 2, "Ruido = " + String(noiseVoltage, 4) + " " + voltageUnits);
 
   delay(interactionDisplayDuration);
 
@@ -177,6 +182,83 @@ void sensorInputVoltageCalibration() {
   while (pushbuttonState() != 1) {}
 }
 
+void transmittanceBaseCalibration() {
+  lcd.clear();
+  updateLCDDisplay(0, 0, "Calibracion de la");
+  updateLCDDisplay(0, 1, "transmitancia...");
+  delay(interactionDisplayDuration);
+
+  lcd.clear();
+  updateLCDDisplay(0, 0, "Coloca porta muestra");
+  updateLCDDisplay(0, 1, "limpia en el sensor.");
+  pressButtonToMessage(1, "para continuar.");
+  while (pushbuttonState() != 1) {}
+
+  int dato = 0;
+
+  Average<double> gatheredData(dataCaptureLoop);
+  while (dato < dataCaptureLoop) {
+    dato = dato + 1;
+
+    lcd.clear();
+    delay(shortDelay);
+    updateLCDDisplay(0, 0, "Configure captura " + String(dato) + ".");
+    updateLCDDisplay(0, 1, "(A) " + String(myCaptures[dato - 1], 4));
+    pressButtonToMessage(1, "para continuar.");
+    while (pushbuttonState() != 1) {}
+    lcd.clear();
+    delay(shortDelay);
+
+    double crudeOutputVoltage = readSensorInputVoltage();
+    double capturedOutputVoltage = constrain(crudeOutputVoltage - noiseVoltage, 0, INF);
+
+    capturedDataStatus(dato, 0, myCaptures[dato - 1]);
+    pressButtonToMessage(1, "para capturar.");
+    while (pushbuttonState() != 1) {
+      crudeOutputVoltage = readSensorInputVoltage();
+      capturedOutputVoltage = constrain(crudeOutputVoltage - noiseVoltage, 0, INF);
+      displayFilteredCrudeVoltage(crudeOutputVoltage, capturedOutputVoltage);
+    }
+
+    lcd.clear();
+    capturedDataStatus(dato, 0, myCaptures[dato - 1]);
+    updateLCDDisplay(0, 3, "Capturando...");
+
+    Average<double> scanningVoltageData(scanningDataSamples);
+
+    for (int i = 0; i < scanningDataSamples; i++) {
+      crudeOutputVoltage = readSensorInputVoltage();
+      capturedOutputVoltage = constrain(crudeOutputVoltage - noiseVoltage, 0, INF);
+      scanningVoltageData.push(capturedOutputVoltage);
+      displayFilteredCrudeVoltage(crudeOutputVoltage, capturedOutputVoltage);
+    }
+
+    capturedOutputVoltage = scanningVoltageData.maximum();
+
+    gatheredData.push(capturedOutputVoltage);
+    baseTransmittanceCaptures[dato - 1] = capturedOutputVoltage;
+    delay(shortDelay);
+  }
+
+  lcd.clear();
+  updateLCDDisplay(0, 0, "Transmitancia base:");
+  const int columns = 2;
+  const int rowsPerColumn = 3;
+
+  for (int c = 0; c < columns; c++) {
+    for (int r = 0; r < rowsPerColumn; r++) {
+      if (r + (c * 3) == dataCaptureLoop) {
+        break;
+      }
+      updateLCDDisplay(c * 11, r + 1, String(r + 1 + (c * 3)) + ": " + String(gatheredData.get(r + (c * 3)), 4));
+    }
+  }
+
+  delay(shortDelay);
+  while (pushbuttonState() != 1) {}
+
+  lcd.clear();
+}
 /*
 *************************************************
 4 - Medical Diagnosis & Data Interpretation
@@ -186,20 +268,19 @@ void sensorInputVoltageCalibration() {
 void medicalDiagnosis() {
   lcd.clear();
   updateLCDDisplay(0, 0, "Iniciando analisis");
-  updateLCDDisplay(0, 1, "medico...");
+  updateLCDDisplay(0, 1, "de muestras...");
   delay(messageDisplayDuration);
-
-  analysisCounter = analysisCounter + 1;
-
-  int copia = 0;
-  int dato = 0;
-  Average<double> resultados(copyCaptureLoop);
 
   String patientDiagnostic;
   lcd.clear();
   updateLCDDisplay(0, 0, "Ingrese diagnostico");
   updateLCDDisplay(0, 1, "del paciente:");
   patientDiagnostic = PositiveNegativeSelector();
+
+  analysisCounter = analysisCounter + 1;
+
+  int copia = 0;
+  int dato = 0;
 
   while (copia < copyCaptureLoop) {
     copia = copia + 1;
@@ -224,18 +305,14 @@ void medicalDiagnosis() {
       delay(shortDelay);
 
       double crudeOutputVoltage = readSensorInputVoltage();
-      double capturedOutputVoltage = crudeOutputVoltage - noiseVoltage;
+      double capturedOutputVoltage = constrain(crudeOutputVoltage - noiseVoltage, 0, INF);
 
       capturedDataStatus(dato, copia, myCaptures[dato - 1]);
       pressButtonToMessage(1, "para capturar.");
       while (pushbuttonState() != 1) {
         crudeOutputVoltage = readSensorInputVoltage();
-        capturedOutputVoltage = crudeOutputVoltage - noiseVoltage;
-        updateLCDDisplay(0, 1, "Filtro: " + String(capturedOutputVoltage, 4));
-        updateLCDDisplay(15, 1, "V");
-        updateLCDDisplay(0, 2, "Crudo:  " + String(crudeOutputVoltage, 4));
-        updateLCDDisplay(15, 2, "V");
-        delay(minimumDelay);
+        capturedOutputVoltage = constrain(crudeOutputVoltage - noiseVoltage, 0, INF);
+        displayFilteredCrudeVoltage(crudeOutputVoltage, capturedOutputVoltage);
       }
 
       lcd.clear();
@@ -246,13 +323,9 @@ void medicalDiagnosis() {
 
       for (int i = 0; i < scanningDataSamples; i++) {
         crudeOutputVoltage = readSensorInputVoltage();
-        capturedOutputVoltage = crudeOutputVoltage - noiseVoltage;
-        updateLCDDisplay(0, 1, "Filtro: " + String(capturedOutputVoltage, 4));
-        updateLCDDisplay(15, 1, "V");
-        updateLCDDisplay(0, 2, "Crudo:  " + String(crudeOutputVoltage, 4));
-        updateLCDDisplay(15, 2, "V");
+        capturedOutputVoltage = constrain(crudeOutputVoltage - noiseVoltage, 0, INF);
         scanningVoltageData.push(capturedOutputVoltage);
-        delay(minimumDelay);
+        displayFilteredCrudeVoltage(crudeOutputVoltage, capturedOutputVoltage);
       }
 
       capturedOutputVoltage = scanningVoltageData.maximum();
@@ -405,6 +478,14 @@ double getOutputAverageVoltage(int avSize, int avDelay) {
   return averageValue.mean();
 }
 
+void displayFilteredCrudeVoltage(double crudeOutputVoltage, double capturedOutputVoltage) {
+  updateLCDDisplay(0, 1, "Filtro: " + String(capturedOutputVoltage, 4));
+  updateLCDDisplay(15, 1, "V");
+  updateLCDDisplay(0, 2, "Crudo:  " + String(crudeOutputVoltage, 4));
+  updateLCDDisplay(15, 2, "V");
+  delay(minimumDelay);
+}
+
 // DISPLAY
 
 void updateLCDDisplay(int cell, int row, String displayString) {
@@ -415,15 +496,32 @@ void updateLCDDisplay(int cell, int row, String displayString) {
 void capturedDataStatus(int data, int copy, double capture) {
   updateLCDDisplay(0, 0, String(data));
   updateLCDDisplay(7, 0, String(capture, 2));
-  updateLCDDisplay(17, 0, String(copy) + "/" + String(copyCaptureLoop));
+  if (copy > 0) {
+    updateLCDDisplay(17, 0, String(copy) + "/" + String(copyCaptureLoop));
+  } else {
+    updateLCDDisplay(17, 0, "1/1");
+  }
 }
 
 // CSV GENERATION
 
 void csvTitleGenerator() {
   Serial.println("");
-  Serial.print("Paciente, Diagnostico, Analisis, ");
+
+  Serial.print(" , , , ");
   int myCapturesLength = (int)sizeof(myCaptures) / sizeof(myCaptures[0]);
+  for (int i = 0; i < myCapturesLength; i++) {
+    Serial.print(String(myCaptures[i], 4) + ", ");
+  }
+  Serial.println("");
+  Serial.print(" , , Transmitancia base, ");
+  for (int i = 0; i < dataCaptureLoop; i++) {
+    Serial.print(String(baseTransmittanceCaptures[i], 4) + ", ");
+  }
+  Serial.println("");
+
+  Serial.println("");
+  Serial.print("Paciente, Diagnostico, Analisis, ");
   for (int i = 0; i < myCapturesLength; i++) {
     Serial.print(String(myCaptures[i], 4) + ", ");
   }
