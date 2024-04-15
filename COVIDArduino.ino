@@ -1,6 +1,7 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <Average.h>
+#include <Math.h>
 
 // LCD Display Setup
 LiquidCrystal_I2C lcd(0x27, 20, 4);
@@ -49,7 +50,7 @@ int analysisCounter = 0;
 const double capturesSensor1[dataCaptureLoop] = { 0.30, 0.33, 0.36, 0.39, 0.42 };
 const double capturesSensor2[dataCaptureLoop] = { 0.28, 0.33, 0.38, 0.43, 0.48 };
 double myCaptures[dataCaptureLoop];
-const int sensor = 1;  // Select Working Sensor
+const int sensor = 2;  // Select Working Sensor
 
 // Absorbance and Transmittance
 const double baseTransmittance = 0;
@@ -335,10 +336,13 @@ void medicalDiagnosis() {
       delay(shortDelay);
     }
 
-    lcd.clear();
-    updateLCDDisplay(0, 0, "Capturas:");
+    // Captures
     const int columns = 2;
     const int rowsPerColumn = 3;
+
+    // Voltage Captures
+    lcd.clear();
+    updateLCDDisplay(0, 0, "Capturas:");
 
     for (int c = 0; c < columns; c++) {
       for (int r = 0; r < rowsPerColumn; r++) {
@@ -349,10 +353,45 @@ void medicalDiagnosis() {
       }
     }
 
-    csvDataGenerator(analysisCounter, patientDiagnostic, copia, printCaptures);
+    delay(shortDelay);
+    while (pushbuttonState() != 1) {}
+
+    // Transmittance Captures
+    lcd.clear();
+    updateLCDDisplay(0, 0, "Transmitancias:");
+
+    for (int c = 0; c < columns; c++) {
+      for (int r = 0; r < rowsPerColumn; r++) {
+        if (r + (c * 3) == dataCaptureLoop) {
+          break;
+        }
+        const double transmittanceT = transmittance(baseTransmittanceCaptures[r + (c * 3)], gatheredData.get(r + (c * 3)));
+        updateLCDDisplay(c * 11, r + 1, String(r + 1 + (c * 3)) + ": " + String(transmittanceT, 2) + "%");
+      }
+    }
 
     delay(shortDelay);
     while (pushbuttonState() != 1) {}
+
+    // Absorbance Captures
+    lcd.clear();
+    updateLCDDisplay(0, 0, "Absorbancias:");
+
+    for (int c = 0; c < columns; c++) {
+      for (int r = 0; r < rowsPerColumn; r++) {
+        if (r + (c * 3) == dataCaptureLoop) {
+          break;
+        }
+        const double absorbanceA = absorbance(baseTransmittanceCaptures[r + (c * 3)], gatheredData.get(r + (c * 3)));
+        updateLCDDisplay(c * 11, r + 1, String(r + 1 + (c * 3)) + ": " + String(absorbanceA, 4));
+      }
+    }
+
+    delay(shortDelay);
+    while (pushbuttonState() != 1) {}
+
+    // CSV Generation
+    csvDataGenerator(analysisCounter, patientDiagnostic, copia, printCaptures);
 
     lcd.clear();
   }
@@ -508,20 +547,20 @@ void capturedDataStatus(int data, int copy, double capture) {
 void csvTitleGenerator() {
   Serial.println("");
 
-  Serial.print(" , , , ");
+  Serial.print(" , , , , ");
   int myCapturesLength = (int)sizeof(myCaptures) / sizeof(myCaptures[0]);
   for (int i = 0; i < myCapturesLength; i++) {
     Serial.print(String(myCaptures[i], 4) + ", ");
   }
   Serial.println("");
-  Serial.print(" , , Transmitancia base, ");
+  Serial.print(" , , , Transmitancia base, ");
   for (int i = 0; i < dataCaptureLoop; i++) {
     Serial.print(String(baseTransmittanceCaptures[i], 4) + ", ");
   }
   Serial.println("");
 
   Serial.println("");
-  Serial.print("Paciente, Diagnostico, Analisis, ");
+  Serial.print("Paciente, Diagnostico, Analisis, , ");
   for (int i = 0; i < myCapturesLength; i++) {
     Serial.print(String(myCaptures[i], 4) + ", ");
   }
@@ -532,7 +571,38 @@ void csvDataGenerator(int analysisCounter, String patientDiagnostic, int copia, 
   Serial.print(String(analysisCounter) + ", ");
   Serial.print(patientDiagnostic + ", ");
   Serial.print(String(copia) + ", ");
+  Serial.print(", ");
   for (int i = 0; i < dataCaptureLoop; i++) {
     Serial.print(String(printCaptures[i], 4) + ", ");
   }
+
+  Serial.println("");
+  Serial.print(", ");
+  Serial.print(", ");
+  Serial.print(", ");
+  Serial.print("Transmitancia (%), ");
+  for (int i = 0; i < dataCaptureLoop; i++) {
+    Serial.print(String(transmittance(baseTransmittanceCaptures[i], printCaptures[i]), 4) + ", ");
+  }
+
+  Serial.println("");
+  Serial.print(", ");
+  Serial.print(", ");
+  Serial.print(", ");
+  Serial.print("Absorbancia, ");
+  for (int i = 0; i < dataCaptureLoop; i++) {
+    Serial.print(String(absorbance(baseTransmittanceCaptures[i], printCaptures[i]), 4) + ", ");
+  }
+}
+
+// FORMULAS
+
+double transmittance(double io, double it) {
+  const double transmittance = constrain((it / io) * 100, 0, 100);
+  return transmittance;
+}
+
+double absorbance(double io, double it) {
+  const double absorbance = constrain(log10(io / it), 0, 2);
+  return absorbance;
 }

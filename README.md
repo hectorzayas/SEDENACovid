@@ -19,6 +19,7 @@ The Arduino reads the voltage produced by the QCL as it traverses a saliva sampl
 
 - [Liquid Crystal I2C](https://www.arduinolibraries.info/libraries/liquid-crystal-i2-c)
 - [Average](https://github.com/MajenkoLibraries/Average)
+- [Math.h](https://www.tutorialspoint.com/arduino/arduino_math_library.htm)
 
 ## Tools Used
 
